@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>node-processor — tudo que está rodando na sua máquina, em uma tabela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080a;
+    --bg-panel: #0b0d10;
+    --bg-panel-2: #0d1014;
+    --border: #1c2128;
+    --border-strong: #1f242c;
+    --text: #e6e9ee;
+    --text-dim: #8b95a5;
+    --text-dimmer: #5f6875;
+    --text-faint: #4c5563;
+    --accent: #3ddbb0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body { font-family: "IBM Plex Sans", system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: var(--text); }
+  .mono { font-family: "IBM Plex Mono", monospace; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: #66eecb; }
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border: 2px solid var(--bg); border-radius: 8px; }
+  @keyframes np-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .wrap { display: flex; justify-content: center; }
+  .col { width: 1120px; max-width: 100%; padding: 0 28px; }
+
+  header {
+    height: 64px; border-bottom: 1px solid #14181e; position: sticky; top: 0;
+    background: rgba(7,8,10,0.86); backdrop-filter: blur(10px); z-index: 20;
+  }
+  header .col { height: 100%; display: flex; align-items: center; gap: 28px; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-badge {
+    width: 22px; height: 22px; border-radius: 6px; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; color: #04120e;
+    font-weight: 700; font-size: 13px; font-family: "IBM Plex Mono", monospace;
+  }
+  .brand-name { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+  header nav { flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 28px; }
+  header nav a { font-size: 13.5px; color: var(--text-dim); }
+  .btn-primary {
+    height: 34px; padding: 0 14px; border-radius: 7px; background: var(--accent); color: #04120e;
+    font-size: 13px; font-weight: 600; display: flex; align-items: center;
+  }
+
+  .hero { border-bottom: 1px solid #14181e; background: radial-gradient(900px 420px at 50% -10%, rgba(61,219,176,0.07), transparent 70%); }
+  .hero .col { padding: 96px 28px 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 22px; }
+  .pill {
+    display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 12px; border-radius: 99px;
+    border: 1px solid var(--border-strong); background: var(--bg-panel); font-size: 11.5px; color: var(--text-dim);
+  }
+  .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: np-pulse 2s ease-in-out infinite; }
+  h1 { margin: 0; font-size: 62px; line-height: 1.04; letter-spacing: -0.035em; font-weight: 700; max-width: 860px; }
+  .lede { margin: 0; font-size: 18.5px; line-height: 1.6; color: #96a1b0; max-width: 620px; }
+  .cta-row { display: flex; align-items: center; gap: 12px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
+  .btn-download {
+    height: 46px; padding: 0 22px; border-radius: 9px; background: var(--accent); color: #04120e;
+    font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 10px;
+  }
+  .btn-download span { font-size: 12px; font-weight: 500; opacity: 0.7; }
+  .term-pill {
+    height: 46px; padding: 0 18px; border-radius: 9px; border: 1px solid var(--border-strong);
+    background: var(--bg-panel); display: flex; align-items: center; gap: 12px; font-size: 13px; color: #a9b3c1;
+    cursor: default;
+  }
+  .term-pill .prompt { color: var(--text-faint); }
+  .copy-btn { cursor: pointer; color: var(--accent); font-size: 11.5px; font-weight: 600; background: none; border: none; font-family: inherit; }
+  .subnote { font-size: 11.5px; color: var(--text-faint); margin-top: -6px; }
+
+  .shot-frame { width: 100%; margin-top: 42px; position: relative; }
+  .shot-inner {
+    border: 1px solid var(--border-strong); border-radius: 12px 12px 0 0; overflow: hidden;
+    background: var(--bg-panel); box-shadow: 0 -20px 90px -30px rgba(61,219,176,0.22);
+  }
+  .shot-bar { height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: #101318; border-bottom: 1px solid var(--border); }
+  .shot-bar-dot { width: 12px; height: 12px; border-radius: 3px; background: var(--accent); }
+  .shot-bar span { font-size: 11.5px; color: var(--text-dim); }
+  .shot-body {
+    position: relative; height: 520px; display: flex; align-items: center; justify-content: center;
+    background: #0d1014; color: var(--text-faint); font-size: 13px; text-align: center; padding: 0 40px;
+  }
+  .shot-body-img { padding: 0; overflow: hidden; }
+  .shot-body-img img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+  .fade-bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(transparent, var(--bg)); pointer-events: none; }
+
+  section { border-bottom: 1px solid #14181e; }
+  section.alt { background: #090b0e; }
+  section .col { padding: 80px 28px; }
+  .eyebrow { font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .section-head { display: flex; flex-direction: column; gap: 10px; max-width: 660px; margin-bottom: 40px; }
+  h2 { margin: 0; font-size: 34px; line-height: 1.15; letter-spacing: -0.025em; font-weight: 700; }
+  .section-head p { margin: 0; font-size: 15.5px; line-height: 1.65; color: var(--text-dim); }
+  code { font-family: "IBM Plex Mono", monospace; color: #a9b3c1; }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card { border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-panel-2); padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+  .card-num { font-size: 26px; font-family: "IBM Plex Mono", monospace; }
+  .card-title { font-size: 14.5px; font-weight: 600; }
+  .card-body { font-size: 13.5px; line-height: 1.65; color: var(--text-dim); }
+  .card-cmd { display: flex; align-items: center; gap: 10px; }
+  .card-cmd-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .card-cmd-text { font-family: "IBM Plex Mono", monospace; font-size: 13px; }
+
+  .features-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border-strong);
+    border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden;
+  }
+  .feature-cell { background: var(--bg-panel-2); padding: 24px 22px; display: flex; flex-direction: column; gap: 9px; min-height: 150px; }
+  .feature-title { font-size: 14.5px; font-weight: 600; color: var(--text); }
+  .feature-body { font-size: 13.5px; line-height: 1.65; color: var(--text-dim); }
+
+  .download-row { display: flex; gap: 48px; align-items: flex-start; flex-wrap: wrap; }
+  .download-left { flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 14px; }
+  .download-left p { margin: 0; font-size: 15.5px; line-height: 1.65; color: var(--text-dim); max-width: 440px; }
+  .download-cta { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  .btn-secondary { height: 46px; padding: 0 18px; border-radius: 9px; border: 1px solid var(--border-strong); color: #cdd4de; font-size: 14.5px; display: flex; align-items: center; }
+  .hash-lines { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--text-faint); line-height: 1.9; margin-top: 8px; }
+  .term-card { width: 420px; max-width: 100%; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg-panel); overflow: hidden; }
+  .term-card-head { padding: 12px 16px; border-bottom: 1px solid var(--border); font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--text-dimmer); }
+  .term-card-body { padding: 16px; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; line-height: 2.05; }
+  .term-line { display: flex; gap: 10px; }
+  .term-line .p { color: #3b434f; flex: none; }
+
+  footer .col { padding: 32px 28px 56px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  footer .brand-tag { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--text-faint); }
+  footer nav { margin-left: auto; display: flex; gap: 18px; }
+  footer nav a { font-size: 12.5px; color: var(--text-dimmer); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="col">
+    <div class="brand">
+      <div class="brand-badge">n</div>
+      <span class="brand-name">node-processor</span>
+    </div>
+    <nav>
+      <a href="#problema">o problema</a>
+      <a href="#como">como funciona</a>
+      <a href="#download">download</a>
+      <a href="#download" class="btn-primary">Baixar para Windows</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="col">
+    <div class="pill">
+      <span class="pulse-dot"></span>
+      Windows 10 / 11 · Tauri v2 · Rust + React
+    </div>
+    <h1>Tudo que está rodando na sua máquina, em uma tabela.</h1>
+    <p class="lede">Node, Python, Docker e agentes de IA espalhados por dezenas de pastas de projeto. O node-processor acha todos — registrados ou não — mostra porta, CPU e memória, e mata o que você quiser com um clique.</p>
+
+    <div class="cta-row">
+      <a href="#download" class="btn-download">Baixar .msi <span>6,4 MB</span></a>
+      <div class="term-pill">
+        <span class="prompt">&gt;</span> winget install node-processor
+        <button class="copy-btn" id="copy-btn" onclick="copyCmd()">copiar</button>
+      </div>
+    </div>
+    <div class="subnote">x64 · sem instalador pesado, sem Electron · 8 MB de RAM em idle</div>
+
+    <div class="shot-frame">
+      <div class="shot-inner">
+        <div class="shot-bar">
+          <div class="shot-bar-dot"></div>
+          <span>node-processor — descoberta híbrida, agrupamento, IA e proteção</span>
+        </div>
+        <div class="shot-body shot-body-img">
+          <img src="assets/screenshot-hero.png" alt="node-processor rodando, mostrando processos agrupados por pasta" />
+        </div>
+      </div>
+      <div class="fade-bottom"></div>
+    </div>
+  </div>
+</div>
+
+<section id="problema">
+  <div class="col">
+    <div class="section-head">
+      <div class="eyebrow">o problema</div>
+      <h2>Você não sabe o que está rodando.</h2>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-num" style="color:#f2b13c">:5173</div>
+        <div class="card-title">"Já tem algo nessa porta"</div>
+        <div class="card-body">Um <code>npm run dev</code> de três dias atrás, em uma pasta que você esqueceu. Achar quem é dá mais trabalho que resolver.</div>
+      </div>
+      <div class="card">
+        <div class="card-num" style="color:#ff8079">14 GB</div>
+        <div class="card-title">RAM que ninguém pediu</div>
+        <div class="card-body">Watchers, containers, agentes de IA em loop. Todos vivos, nenhum em uso, e o Gerenciador de Tarefas só mostra dezenas de <code>node.exe</code> idênticos.</div>
+      </div>
+      <div class="card">
+        <div class="card-num" style="color:#c08cff">?</div>
+        <div class="card-title">Matar sem saber o que morre</div>
+        <div class="card-body">Sem pasta, sem comando original, sem log. Você chuta o PID e descobre depois qual projeto quebrou.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="como" class="alt">
+  <div class="col">
+    <div class="section-head">
+      <div class="eyebrow">descoberta híbrida</div>
+      <h2>Quatro fontes, uma lista.</h2>
+      <p>O registry dá o contexto rico. O scan do sistema garante que nada escape. O que não bate com o registry não é escondido — aparece marcado como <span style="color:#f2b13c;font-weight:600">não rastreado</span>.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-cmd"><span class="card-cmd-dot" style="background:#3ddbb0"></span><span class="card-cmd-text" style="color:#3ddbb0">dev-registry.json</span></div>
+        <div class="card-title">O que você já registrou</div>
+        <div class="card-body">Pasta do projeto, comando original, horário de início e caminho do log — a metadata rica que o dev-registry.ps1 mantém.</div>
+      </div>
+      <div class="card">
+        <div class="card-cmd"><span class="card-cmd-dot" style="background:#86d95c"></span><span class="card-cmd-text" style="color:#86d95c">sysinfo (Rust)</span></div>
+        <div class="card-title">Varredura do sistema inteiro</div>
+        <div class="card-body">Todo processo Node, Python ou agente de IA vivo na máquina, registrado ou não. Nada fica invisível.</div>
+      </div>
+      <div class="card">
+        <div class="card-cmd"><span class="card-cmd-dot" style="background:#56a8ff"></span><span class="card-cmd-text" style="color:#56a8ff">netstat -ano</span></div>
+        <div class="card-title">Quem escuta qual porta</div>
+        <div class="card-body">Cada PID cruzado com suas portas em escuta. Clique na porta e o navegador abre nela.</div>
+      </div>
+      <div class="card">
+        <div class="card-cmd"><span class="card-cmd-dot" style="background:#2fc4e8"></span><span class="card-cmd-text" style="color:#2fc4e8">docker ps</span></div>
+        <div class="card-title">Containers no projeto certo</div>
+        <div class="card-body">Containers cruzados por nome e pasta, aparecendo junto do resto do projeto em vez de em outra janela.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <div class="section-head">
+      <div class="eyebrow">na interface</div>
+      <h2>Feito para limpar a casa rápido.</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-cell">
+        <div class="feature-title">Agrupar por pasta</div>
+        <div class="feature-body">Colapsa a lista em grupos por projeto, com "matar todos da pasta" e minimizar/maximizar todos de uma vez.</div>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-title">Matar em lote, com confirmação</div>
+        <div class="feature-body">Seleção múltipla ou todos os filtrados. Sempre com a lista exata do que vai morrer antes de confirmar.</div>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-title">Log ao vivo</div>
+        <div class="feature-body">Tail do .dev-registry.log do processo, sem sair do app e sem procurar o arquivo.</div>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-title">Busca e ordenação</div>
+        <div class="feature-body">Busca livre por pasta, comando, PID ou porta. Clique em qualquer header para ordenar.</div>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-title">Abrir onde importa</div>
+        <div class="feature-body">Porta no navegador, pasta no Explorer, terminal já dentro do diretório do projeto.</div>
+      </div>
+      <div class="feature-cell">
+        <div class="feature-title">Auto-refresh de 4s</div>
+        <div class="feature-body">CPU, memória e tempo ativo atualizando sozinhos — ou pausados, quando você preferir ler com calma.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="download" class="alt">
+  <div class="col">
+    <div class="download-row">
+      <div class="download-left">
+        <h2>Baixe e rode.</h2>
+        <p>Binário assinado, sem dependências. Ele lê o <code>dev-registry.json</code> que você já tem e funciona mesmo sem ele.</p>
+        <div class="download-cta">
+          <a href="#download" class="btn-download">node-processor_0.4.1_x64.msi</a>
+          <a href="#download" class="btn-secondary">.exe portátil</a>
+        </div>
+        <div class="hash-lines">
+          <div>sha256 · 9f3c1a…7be204</div>
+          <div>build 2026.08.20 · rustc 1.93 · tauri 2.11</div>
+        </div>
+      </div>
+      <div class="term-card">
+        <div class="term-card-head">rodar do fonte</div>
+        <div class="term-card-body">
+          <div class="term-line"><span class="p">$</span><span style="color:#d4dae3">git clone github.com/você/node-processor</span></div>
+          <div class="term-line"><span class="p">$</span><span style="color:#d4dae3">npm install</span></div>
+          <div class="term-line"><span class="p">$</span><span style="color:#d4dae3">npm run tauri dev</span></div>
+          <div class="term-line"><span class="p"> </span><span style="color:#6d7787">Compiling node-processor v0.4.1</span></div>
+          <div class="term-line"><span class="p"> </span><span style="color:#86d95c">Finished dev in 18.42s</span></div>
+          <div class="term-line"><span class="p"> </span><span style="color:#3ddbb0">scan: 12 processos · 6 pastas · 3.94 GB</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="col">
+    <span class="brand-tag">node-processor · MIT</span>
+    <nav>
+      <a href="#problema">o problema</a>
+      <a href="#como">como funciona</a>
+      <a href="#download">download</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  function copyCmd() {
+    const btn = document.getElementById("copy-btn");
+    navigator.clipboard.writeText("winget install node-processor").then(() => {
+      btn.textContent = "copiado";
+      setTimeout(() => { btn.textContent = "copiar"; }, 1800);
+    });
+  }
+</script>
+
+</body>
+</html>
