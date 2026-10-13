@@ -38,9 +38,10 @@
     if (!/^\d+\.\d+\.\d+$/.test(version) || release.draft || release.prerelease || (local && compare(version, local.version) < 0)) return;
     const asset = release.assets?.find(item => item.name === 'node-processor-setup.exe');
     if (!asset || !Number.isFinite(asset.size) || asset.size < 1) return;
-    const stable = `https://github.com/${repository}/releases/latest/download/`;
-    links.forEach(link => { link.href = `${stable}node-processor-setup.exe`; });
-    if (release.assets.some(item => item.name === 'SHA256SUMS.txt')) checksum.href = `${stable}SHA256SUMS.txt`;
+    const releaseUrl = `https://github.com/${repository}/releases/download/${release.tag_name}/`;
+    links.forEach(link => { link.href = `${releaseUrl}${asset.name}`; });
+    const sums = release.assets.find(item => item.name === 'SHA256SUMS.txt');
+    if (sums && checksum) checksum.href = `${releaseUrl}${sums.name}`;
     describe(version, asset.size);
   }
   latest().catch(() => {});

@@ -5,28 +5,37 @@ import vm from 'node:vm';
 
 const source = readFileSync(new URL('../landing/script.js', import.meta.url), 'utf8');
 async function render(release, failure = false) {
-  const links = Array.from({ length: 3 }, () => ({ href: 'downloads/node-processor-setup.exe' }));
+  const links = Array.from({ length: 3 }, () => ({ href: 'downloads/node-processor-setup.exe', addEventListener: (_event, handler) => { linkHandlers.push(handler); } }));
+  const linkHandlers = [];
   const notes = [{ textContent: '' }, { textContent: '' }];
   const checksum = { href: 'downloads/SHA256SUMS.txt' };
+  const visits = { textContent: '—' }, downloads = { textContent: '—' };
+  const stored = new Map();
+  const localStorage = { getItem: key => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value) };
   const context = { window: { NODE_PROCESSOR_RELEASE: { version: '0.2.0', size: 3_000_000 } }, document: {
     querySelectorAll: selector => selector === '[data-download]' ? links : notes,
-    querySelector: () => checksum,
-  }, AbortSignal, fetch: async () => { if (failure) throw new Error('offline'); return { ok: true, json: async () => release }; } };
+    querySelector: selector => ({ '[data-checksum]': checksum, '[data-visits]': visits, '[data-downloads]': downloads })[selector],
+  }, localStorage, AbortSignal, fetch: async () => { if (failure) throw new Error('offline'); return { ok: true, json: async () => release }; } };
   vm.runInNewContext(source, context);
   await new Promise(resolve => setImmediate(resolve));
-  return { links, notes, checksum };
+  return { links, notes, checksum, visits, downloads, linkHandlers };
 }
 const published = version => ({ tag_name: `v${version}`, draft: false, prerelease: false, assets: [{ name: 'node-processor-setup.exe', size: 4_000_000 }, { name: 'SHA256SUMS.txt' }] });
-test('new release switches every CTA and checksum to stable direct assets', async () => {
+test('new release switches every CTA and checksum to versioned direct assets', async () => {
   const result = await render(published('0.3.0'));
-  assert.ok(result.links.every(link => link.href === 'https://github.com/felvieira/node-processor/releases/latest/download/node-processor-setup.exe'));
-  assert.match(result.checksum.href, /latest\/download\/SHA256SUMS.txt$/);
+  assert.ok(result.links.every(link => link.href === 'https://github.com/felvieira/node-processor/releases/download/v0.3.0/node-processor-setup.exe'));
+  assert.equal(result.checksum.href, 'https://github.com/felvieira/node-processor/releases/download/v0.3.0/SHA256SUMS.txt');
+  assert.equal(result.visits.textContent, '1');
+  assert.equal(result.downloads.textContent, '0');
+  result.linkHandlers[0]();
+  assert.equal(result.downloads.textContent, '1');
   assert.ok(result.notes.every(note => note.textContent.startsWith('v0.3.0')));
 });
 test('network failure leaves bundled installer usable', async () => {
   const result = await render(null, true);
   assert.ok(result.links.every(link => link.href === 'downloads/node-processor-setup.exe'));
   assert.match(result.notes[0].textContent, /^v0.2.0/);
+  assert.equal(result.visits.textContent, '1');
 });
 test('old releases, prereleases, drafts and missing installers cannot replace the local build', async () => {
   for (const release of [published('0.1.0'), { ...published('0.3.0'), prerelease: true }, { ...published('0.3.0'), draft: true }, { ...published('0.3.0'), assets: [] }, { ...published('0.3.0'), tag_name: 'invalid' }]) {
