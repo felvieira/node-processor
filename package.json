@@ -1,13 +1,16 @@
 {
   "name": "node-processor",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "release:build": "tauri build --bundles nsis && node scripts/package-release.mjs",
+    "release:package": "node scripts/package-release.mjs",
+    "video:render": "python scripts/render-demo.py"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.14.10",

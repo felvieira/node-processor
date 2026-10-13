@@ -1,0 +1,28 @@
+import { readFile, readdir, mkdir, copyFile, writeFile, rename } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+const config = JSON.parse(await readFile(path.join(root, 'src-tauri/tauri.conf.json'), 'utf8'));
+const pkg = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+const cargo = await readFile(path.join(root, 'src-tauri/Cargo.toml'), 'utf8');
+const rustVersion = cargo.match(/^version\s*=\s*"([^"]+)"/m)?.[1];
+if (pkg.version !== config.version || rustVersion !== config.version) throw new Error('Package, Cargo and Tauri versions must match.');
+const bundle = path.join(root, 'src-tauri/target/release/bundle/nsis');
+const candidates = (await readdir(bundle)).filter(name => name.endsWith(`_${config.version}_x64-setup.exe`));
+if (candidates.length !== 1) throw new Error(`Expected one x64 installer for ${config.version}; found ${candidates.length}.`);
+const source = path.join(bundle, candidates[0]);
+const bytes = await readFile(source);
+if (bytes.subarray(0, 2).toString() !== 'MZ') throw new Error('Invalid Windows executable.');
+const sha256 = createHash('sha256').update(bytes).digest('hex');
+const output = path.join(root, 'landing/downloads');
+await mkdir(output, { recursive: true });
+const assetName = 'node-processor-setup.exe';
+await copyFile(source, path.join(output, `${assetName}.tmp`));
+await rename(path.join(output, `${assetName}.tmp`), path.join(output, assetName));
+const release = { version: config.version, assetName, size: bytes.length, sha256, builtAt: new Date().toISOString() };
+await writeFile(path.join(output, 'release.json'), JSON.stringify(release, null, 2) + '\n');
+await writeFile(path.join(output, 'release.js'), `window.NODE_PROCESSOR_RELEASE = ${JSON.stringify(release)};\n`);
+await writeFile(path.join(output, 'SHA256SUMS.txt'), `${sha256}  ${assetName}\n`);
+console.log(JSON.stringify({ ...release, installer: path.join(output, assetName) }, null, 2));

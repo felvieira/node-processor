@@ -124,20 +124,25 @@ cd src-tauri && cargo check && cd ..       # type-check do backend
 
 ## Gerando o instalador (build de produção)
 
-O comando `tauri build` compila em modo release e empacota automaticamente
-no formato nativo de cada sistema operacional — **rode em cada SO onde
-quiser gerar o instalador correspondente** (o Tauri não faz cross-compile
-de bundle nativo out-of-the-box):
+O fluxo de distribuição configurado gera o instalador Windows NSIS e atualiza
+o download da landing com versão, tamanho e SHA-256 do arquivo produzido:
 
 ```bash
-npm run tauri build
+npm run release:build
 ```
 
 | SO | Saída | Local |
 |---|---|---|
-| Windows | `.msi` e `.exe` (NSIS) | `src-tauri/target/release/bundle/{msi,nsis}/` |
-| macOS | `.dmg` e `.app` | `src-tauri/target/release/bundle/{dmg,macos}/` |
-| Linux | `.deb`, `.rpm` e `.AppImage` | `src-tauri/target/release/bundle/{deb,rpm,appimage}/` |
+| Windows x64 | `.exe` (NSIS) | `landing/downloads/node-processor-setup.exe` |
+
+O instalador configura a inicialização na bandeja ao entrar no Windows. Fechar
+a janela mantém o app na bandeja; use **Sair** no menu do ícone para encerrar.
+O app permite apenas uma instância. A desinstalação remove a inicialização.
+
+Tags `vX.Y.Z` acionam o workflow de build e publicação no GitHub Releases.
+A landing consulta a última release estável e atualiza o link direto sem editar
+HTML. A atualização do aplicativo instalado continua sendo manual.
+Veja [distribuição e vídeo](landing/README.md) para o fluxo completo.
 
 O ícone e os metadados do instalador (nome, descrição, categoria, publisher)
 já estão configurados em [`src-tauri/tauri.conf.json`](src-tauri/tauri.conf.json).

@@ -13,6 +13,15 @@ use ai::{AiVerdictItem, ProcessSnapshot};
 use history::StoredEntry;
 use processes::ProcessInfo;
 use protected::ProtectedList;
+use tauri::{Manager, menu::{Menu, MenuItem}, tray::TrayIconBuilder};
+
+fn show_main(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
 
 #[tauri::command]
 async fn list_processes() -> Result<Vec<ProcessInfo>, String> {
@@ -71,8 +80,35 @@ fn get_kill_history() -> Vec<StoredEntry> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| show_main(app)))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            let open = MenuItem::with_id(app, "open", "Abrir node-processor", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&open, &quit])?;
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().expect("bundled app icon").clone())
+                .tooltip("node-processor · processos de desenvolvimento")
+                .menu(&menu)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "open" => show_main(app),
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .build(app)?;
+            if !std::env::args().any(|arg| arg == "--background") {
+                show_main(app.handle());
+            }
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if window.hide().is_ok() {
+                    api.prevent_close();
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             list_processes,
             kill_processes,

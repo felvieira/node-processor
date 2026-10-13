@@ -1,0 +1,42 @@
+name: Windows release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: windows-release
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: npm ci
+      - name: Validate release versions
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag does not match package version' }
+      - run: npm run release:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: node-processor-windows
+          path: landing/downloads/
+      - name: Publish tagged release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create $env:GITHUB_REF_NAME landing/downloads/node-processor-setup.exe landing/downloads/SHA256SUMS.txt landing/downloads/release.json --verify-tag --generate-notes --title "node-processor $env:GITHUB_REF_NAME" --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }

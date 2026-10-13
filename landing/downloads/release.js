@@ -1,0 +1,1 @@
+window.NODE_PROCESSOR_RELEASE = {"version":"0.2.0","assetName":"node-processor-setup.exe","size":2991483,"sha256":"efe14da75d0ee673def0f6a7bd4a3cca1b41c645f0c48a6999cfb6a1d5dc1f69","builtAt":"2026-10-13T17:46:17.361Z"};
