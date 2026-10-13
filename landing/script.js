@@ -4,6 +4,22 @@
   const links = document.querySelectorAll('[data-download]');
   const notes = document.querySelectorAll('[data-release-note]');
   const checksum = document.querySelector('[data-checksum]');
+  const visitCounter = document.querySelector('[data-visits]');
+  const downloadCounter = document.querySelector('[data-downloads]');
+  const localCount = key => {
+    try {
+      const next = Number.parseInt(localStorage.getItem(key) || '0', 10) + 1;
+      localStorage.setItem(key, String(next));
+      return next;
+    } catch { return null; }
+  };
+  const showCount = (element, count) => { if (element) element.textContent = count === null ? '—' : count.toLocaleString('pt-BR'); };
+  showCount(visitCounter, localCount('node-processor:landing-visits'));
+  try { showCount(downloadCounter, Number.parseInt(localStorage.getItem('node-processor:landing-downloads') || '0', 10)); }
+  catch { showCount(downloadCounter, null); }
+  document.querySelectorAll('[data-download]').forEach(link => link.addEventListener('click', () => {
+    showCount(downloadCounter, localCount('node-processor:landing-downloads'));
+  }));
   function describe(version, size) {
     const mb = (size / 1024 / 1024).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
     notes.forEach(note => { note.textContent = `v${version} · Windows x64 · ${mb} MB · Instalador .exe`; });

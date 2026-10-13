@@ -33,3 +33,6 @@ src-tauri/gen
 .swarm/
 .claude/
 graphify-out/
+.playwright-mcp/
+.quarantine-private/
+generation/node-processor/img/
