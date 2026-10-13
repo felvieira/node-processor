@@ -57,6 +57,6 @@ Os testes cobrem troca para nova release, comparação numérica de versões, fa
 
 ## Publicação
 
-Envie o conteúdo completo de `landing/`, incluindo MP4 e `downloads/`, ao servidor estático. Para Coolify, a configuração atual está em `docker-compose.yml`; configure o domínio e TLS no serviço. Use sempre o nome de projeto `node-processor-landing`. Servidores locais persistentes devem passar pelo dev-registry canônico, nunca ser iniciados com processos soltos.
+Produção: https://nodeprocessor.felvieira.com.br, no mesmo Coolify/VPS do LinkVault. O recurso usa o `Dockerfile` desta pasta, porta interna 80, `/healthz` e TLS do proxy existente. Veja `DEPLOY.md` para identificação do recurso e atualização. MP4 e `downloads/` são incluídos na imagem. Servidores locais persistentes devem passar pelo dev-registry canônico, nunca ser iniciados com processos soltos.
 
-O script canônico está em `D:/Codex-memory/scripts/dev-registry.ps1`. Nenhum servidor persistente foi iniciado nesta entrega. A inspeção pelo navegador de `file://` foi bloqueada pela política da ferramenta; a validação executada foi estrutural e de build, não uma revisão visual desktop/mobile.
+O script canônico está em `D:/Codex-memory/scripts/dev-registry.ps1`. Nenhum servidor local persistente foi iniciado. A revisão visual desktop/mobile e do player foi feita no endereço HTTPS publicado. Evidências e limitações estão em `VALIDATION.md`.
